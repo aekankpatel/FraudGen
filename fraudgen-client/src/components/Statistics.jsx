@@ -45,7 +45,10 @@ function Statistics() {
   const fetchLocationStats = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/statistics/locations');
-      setLocationStats(response.data);
+      setLocationStats({
+       country_statistics: response.data.country_stats,
+       vpn_proxy_statistics: response.data.vpn_proxy_stats
+      });
     } catch (err) {
       console.error('Error fetching location statistics:', err);
       setError(`Error loading location statistics: ${err.message}`);
@@ -83,16 +86,23 @@ function Statistics() {
   const prepareCountryFraudData = () => {
     if (!locationStats || !locationStats.country_statistics) return [];
 
-    return locationStats.country_statistics
-      .sort((a, b) => b.fraud_percentage - a.fraud_percentage)
-      .slice(0, 7); // Top 7 countries for better visualization
+    return locationStats.country_statistics.map(item => ({
+      ...item,
+      fraud_percentage: item.total > 0 ? Math.round((item.fraud / item.total) * 100) : 0
+    }))
+   .sort((a, b) => b.fraud_percentage - a.fraud_percentage)
+   .slice(0, 7);  // Top 7 countries
   };
 
   // Prepare data for VPN/Proxy comparison
   const prepareVpnProxyData = () => {
     if (!locationStats || !locationStats.vpn_proxy_statistics) return [];
-    
-    return locationStats.vpn_proxy_statistics;
+
+    return locationStats.vpn_proxy_statistics.map(item => ({
+     using_vpn_proxy: item.vpn_proxy,
+     total_transactions: item.total,
+      fraud_percentage: item.total > 0 ? Math.round((item.fraud / item.total) * 100) : 0
+    }));
   };
 
   // Prepare data for transaction trends
